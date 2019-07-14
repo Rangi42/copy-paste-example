@@ -161,6 +161,27 @@ int main(int argc, char **argv) {
 
 	window->end();
 
+#ifdef WIN32
+	HDC hdc = GetDC(NULL);
+	int hmm = GetDeviceCaps(hdc, HORZSIZE);
+	int hdots = GetDeviceCaps(hdc, HORZRES);
+	int vmm = GetDeviceCaps(hdc, VERTSIZE);
+	int vdots = GetDeviceCaps(hdc, VERTRES);
+	int dhr = GetDeviceCaps(hdc, DESKTOPHORZRES);
+	ReleaseDC(NULL, hdc);
+	float factorw = (100.f * hmm) / hdots;
+	float factorh = (100.f * vmm) / vdots;
+	float scaling = dhr / (float)hdots;
+	LONG right = (LONG)(CW * factorw / scaling);
+	LONG bottom = (LONG)(CH * factorh / scaling);
+	fprintf(stderr, "HORZSIZE = %d\nHORZRES = %d\n", hmm, hdots);
+	fprintf(stderr, "VERTSIZE = %d\nVERTRES = %d\n", vmm, vdots);
+	fprintf(stderr, "DESKTOPHORZRES = %d\n", dhr);
+	fprintf(stderr, "factorw = %.8f\nfactorh = %.8f\n", factorw, factorh);
+	fprintf(stderr, "scaling = %.8f\n", scaling);
+	fprintf(stderr, "right = %ld\nbottom = %ld\n", right, bottom);
+#endif
+
 	window->show(argc, argv);
 
 	return Fl::run();

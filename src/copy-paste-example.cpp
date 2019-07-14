@@ -1,3 +1,5 @@
+#include <cstdio>
+
 #pragma warning(push, 0)
 #include <FL/Fl.H>
 #include <FL/Fl_Shared_Image.H>
@@ -26,6 +28,7 @@ public:
 };
 
 void copy_source(Fl_Widget *, Canvas *source) {
+	fprintf(stderr, "copy_source(wgt, source)\n");
 	source->copying = true;
 	Fl_Copy_Surface *surface = new Fl_Copy_Surface(CW, CH);
 	surface->set_current();
@@ -36,15 +39,31 @@ void copy_source(Fl_Widget *, Canvas *source) {
 }
 
 void paste_dest(Fl_Widget *wgt, Canvas *dest) {
+	fprintf(stderr, "paste_dest(%s, dest)\n", wgt ? "wgt" : "NULL");
 	if (!Fl::clipboard_contains(Fl::clipboard_image)) {
-		return;
+		fprintf(stderr, "!Fl::clipboard_contains(Fl::clipboard_image)\n");
+//		return; // XXX Uncomment to guard against pasting non-image data
 	}
 	if (wgt) {
 		// Triggers dest->handle(FL_PASTE), which then calls paste_dest(NULL, dest)
+		fprintf(stderr, "Fl::paste(*dest, 1, Fl::clipboard_image)\n");
 		Fl::paste(*dest, 1, Fl::clipboard_image);
 		return;
 	}
 	Fl_Image *pasted = (Fl_Image *)Fl::event_clipboard();
+	fprintf(stderr, "pasted == %p\n", pasted);
+	if (pasted->count()) {
+		fprintf(stderr, "pasted->data() == %p\n", pasted->data());
+		if (pasted->data()) {
+			fprintf(stderr, "*pasted->data() == {");
+			for (int i = 0; i < 5; i++) {
+				fprintf(stderr, "0x%02x, ", *(*pasted->data() + i));
+			}
+			fprintf(stderr, "...}\n");
+		}
+	} else {
+		fprintf(stderr, "pasted->count() == 0\n");
+	}
 	int pw = pasted->w(), ph = pasted->h();
 	if (pw > CW) { pw = CW; }
 	if (ph > CH) { ph = CH; }
@@ -57,7 +76,6 @@ void paste_dest(Fl_Widget *wgt, Canvas *dest) {
 	}
 	dest->redraw();
 }
-
 
 Canvas::Canvas(int X, int Y, int W, int H, const char *L) : Fl_Box(X, Y, W, H, L), pixels(), copying(false) {}
 
@@ -103,8 +121,14 @@ int Canvas::handle(int event) {
 		return 1;
 	case FL_PASTE:
 		// Copy 1:1 pixels to clipboard
+		fprintf(stderr, "dest->handle(FL_PASTE)\n");
 		if (Fl::event_clipboard_type() == Fl::clipboard_image) {
+			fprintf(stderr, "Fl::event_clipboard_type() == Fl::clipboard_image\n");
 			paste_dest(NULL, this);
+			return 1;
+		} else {
+			fprintf(stderr, "Fl::event_clipboard_type() != Fl::clipboard_image\n");
+			paste_dest(NULL, this); // XXX Comment to guard against pasting non-image data
 			return 1;
 		}
 		// fallthrough

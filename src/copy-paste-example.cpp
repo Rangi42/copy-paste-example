@@ -74,6 +74,7 @@ void paste_dest(Fl_Widget *wgt, Canvas *dest) {
 			dest->pixels[i * CW + j] = c == ON;
 		}
 	}
+	delete pasted;
 	dest->redraw();
 }
 

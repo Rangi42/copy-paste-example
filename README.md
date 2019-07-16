@@ -61,4 +61,29 @@ A fix for issue #1, [by Manolo](https://groups.google.com/d/msg/fltkgeneral/8Js7
  }
 ```
 
-Issue #2 is not yet solved.
+And a fix for issue #2, also [by Manolo](https://groups.google.com/d/msg/fltkgeneral/8Js7Fgf_86c/RQsfBdTgDgAJ):
+
+```diff
+ // Call this when a "paste" operation happens:
+ void Fl::paste(Fl_Widget &receiver, int clipboard, const char *type) {
+-  if (fl_i_own_selection[clipboard]) {
++  if (fl_i_own_selection[clipboard] && type == Fl::clipboard_plain_text) {
+     // We already have it, do it quickly without window server.
+     // Notice that the text is clobbered if set_selection is
+     // called in response to FL_PASTE!
+     // However, for now, we only paste text in this function
+     if (fl_selection_type[clipboard] != Fl::clipboard_plain_text) return; //TODO: allow copy/paste of image within same app
+     Fl::e_text = fl_selection_buffer[clipboard];
+     Fl::e_length = fl_selection_length[clipboard];
+     if (!Fl::e_text) Fl::e_text = (char *)"";
+     receiver.handle(FL_PASTE);
+     return;
+   }
+   // otherwise get the window server to return it:
+   fl_selection_requestor = &receiver;
+   Atom property = clipboard ? CLIPBOARD : XA_PRIMARY;
+   Fl::e_clipboard_type = type;
+   XConvertSelection(fl_display, property, TARGETS, property,
+                     fl_xid(Fl::first_window()), fl_event_time);
+ }
+```

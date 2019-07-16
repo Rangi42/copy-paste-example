@@ -40,10 +40,12 @@ void copy_source(Fl_Widget *, Canvas *source) {
 
 void paste_dest(Fl_Widget *wgt, Canvas *dest) {
 	fprintf(stderr, "paste_dest(%s, dest)\n", wgt ? "wgt" : "NULL");
+#ifdef _WIN32
 	if (!Fl::clipboard_contains(Fl::clipboard_image)) {
 		fprintf(stderr, "!Fl::clipboard_contains(Fl::clipboard_image)\n");
-//		return; // XXX Uncomment to guard against pasting non-image data
+		return;
 	}
+#endif
 	if (wgt) {
 		// Triggers dest->handle(FL_PASTE), which then calls paste_dest(NULL, dest)
 		fprintf(stderr, "Fl::paste(*dest, 1, Fl::clipboard_image)\n");
@@ -123,16 +125,14 @@ int Canvas::handle(int event) {
 	case FL_PASTE:
 		// Copy 1:1 pixels to clipboard
 		fprintf(stderr, "dest->handle(FL_PASTE)\n");
-		if (Fl::event_clipboard_type() == Fl::clipboard_image) {
-			fprintf(stderr, "Fl::event_clipboard_type() == Fl::clipboard_image\n");
-			paste_dest(NULL, this);
-			return 1;
-		} else {
+#ifdef _WIN32
+		if (Fl::event_clipboard_type() != Fl::clipboard_image) {
 			fprintf(stderr, "Fl::event_clipboard_type() != Fl::clipboard_image\n");
-			paste_dest(NULL, this); // XXX Comment to guard against pasting non-image data
-			return 1;
+			return 0;
 		}
-		// fallthrough
+#endif
+		paste_dest(NULL, this);
+		return 1;
 	default:
 		return Fl_Box::handle(event);
 	}
